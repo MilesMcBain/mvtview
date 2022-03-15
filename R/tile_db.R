@@ -3,7 +3,7 @@ open_tile_db <- function(path) {
   db_con
 }
 
-get_tile_info(db_con) <- function() {
+get_tile_info <- function(dbcon) {
   db_con |>
     DBI::dbListTables()
 
