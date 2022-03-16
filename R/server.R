@@ -1,11 +1,15 @@
 mbvr <- function(tiles_path) {
-  if (!file.exists(tiles_path)) stop(
-    "could not find the tile database: ", 
-    tiles_path
-  )
-  if (!is_mbtiles(tiles_path)) stop(
-    "{mbvr} only supports serving .mbtiles tile databases"
-  )
+  if (!file.exists(tiles_path)) {
+    stop(
+      "could not find the tile database: ",
+      tiles_path
+    )
+  }
+  if (!is_mbtiles(tiles_path)) {
+    stop(
+      "{mbvr} only supports serving .mbtiles tile databases"
+    )
+  }
 
   mvt_server <- create_mvt_server(tiles_path)
   mvt_server$start()
@@ -31,10 +35,10 @@ create_mvt_server <- function(tiles_path) {
 
   server$get(tile_json_name, function(req, res) {
     tile_info <- get_tile_info(tile_db)
-    tile_template_url <- 
+    tile_template_url <-
       glue::glue("http://{req$HEADERS['host']}/{tile_json_name}/{{z}}/{{x}}/{{y}}.vector.pbf")
     tile_info$tiles <- tile_template_url
- 
+
     res$json(tile_info)
   })
 }
