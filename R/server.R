@@ -41,4 +41,6 @@ create_mvt_server <- function(tiles_path) {
 
     res$json(tile_info)
   })
+
+  server
 }
