@@ -3,7 +3,7 @@ open_tile_db <- function(path) {
   db_con
 }
 
-get_tile_info <- function(dbcon) {
+get_tile_info <- function(db_con) {
   metadata <-
     DBI::dbReadTable(db_con, "metadata") |>
     purrr::pmap(
@@ -25,7 +25,7 @@ get_tile_info <- function(dbcon) {
     metadata
 }
 
-get_tile <- function(db_con, x, y, z) {
+get_tile <- function(db_con, z, x, y) {
 
   flipped_y <- bitwShiftL(1, z) - 1 - y
 
