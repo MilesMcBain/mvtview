@@ -38,6 +38,9 @@ get_tile <- function(db_con, z, x, y) {
     ) |>
     dplyr::collect()
   
-  tile_record$tile_data
-
+  if (length(tile_record$tile_data) == 1)
+    return(tile_record$tile_data[[1]])
+    # get the raw vector out of the blob
+  else
+    return(NULL)
 }

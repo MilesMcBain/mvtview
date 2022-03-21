@@ -1,4 +1,4 @@
-serve_mvt <- function(tiles_path) {
+serve_mvt <- function(tiles_path, host = "0.0.0.0", port = NULL) {
   if (!file.exists(tiles_path)) {
     stop(
       "could not find the tile database: ",
@@ -11,7 +11,7 @@ serve_mvt <- function(tiles_path) {
     )
   }
 
-  mvt_server <- create_mvt_server(tiles_path)
+  mvt_server <- create_mvt_server(tiles_path, host, port)
   mvt_server$start()
 
 }
@@ -24,8 +24,8 @@ tileset_name <- function(tiles_path) {
   fs::path_ext_remove(fs::path_file(tiles_path))
 }
 
-create_mvt_server <- function(tiles_path) {
-  server <- ambiorix::Ambiorix$new()
+create_mvt_server <- function(tiles_path, host, port) {
+  server <- ambiorix::Ambiorix$new(host = host, port = port)
   tile_db <- open_tile_db(tiles_path)
   tileset_id <- tileset_name(tiles_path)
   tile_json_name <- glue::glue("{tileset_id}.json")
@@ -47,22 +47,20 @@ create_mvt_server <- function(tiles_path) {
   })
 
   server$get(tile_path, function(req, res) {
-
     y <- as.numeric(stringr::str_extract(req$params$y.vector.pbf, "[0-9]+"))
     x <- as.numeric(req$params$x)
     z <- as.numeric(req$params$z)
 
     res$header("Access-Control-Allow-Origin", "*")
+    res$header("Content-Type", "application/octect-stream")
+    res$header("Content-Encoding", "gzip")
     tile_content <- get_tile(tile_db, z, x, y)
     if (length(tile_content) > 0) {
       res$send(
-        tile_content,
-        headers = list(
-          "Content-Type" = "application/x-protobuf",
-        )
+        tile_content
       )
     } else {
-      res$status(204) # no content
+      res$set_status(204) # no content
       res$send("No content")
     }
 
