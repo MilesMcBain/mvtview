@@ -1,4 +1,4 @@
-serve_mvt <- function(tiles_path, host = "0.0.0.0", port = NULL) {
+serve_mvt <- function(tiles_path, host = "0.0.0.0", port = NULL, serve_mode = "in-memory") {
   if (!file.exists(tiles_path)) {
     stop(
       "could not find the tile database: ",
@@ -11,7 +11,13 @@ serve_mvt <- function(tiles_path, host = "0.0.0.0", port = NULL) {
     )
   }
 
-  mvt_server <- create_mvt_server(tiles_path, host, port)
+  if (!(serve_mode %in% c("in-memory", "disk"))) {
+    stop(
+      "support serve_mode for tiles is either 'in-memory' or 'disk'."
+    )
+  }
+
+  mvt_server <- create_mvt_server(tiles_path, host, port, serve_mode)
   mvt_server$start()
 
 }
@@ -24,9 +30,13 @@ tileset_name <- function(tiles_path) {
   fs::path_ext_remove(fs::path_file(tiles_path))
 }
 
-create_mvt_server <- function(tiles_path, host, port) {
+create_mvt_server <- function(tiles_path, host, port, serve_mode) {
   server <- ambiorix::Ambiorix$new(host = host, port = port)
-  tile_db <- open_tile_db(tiles_path)
+  tile_db <- if (serve_mode == "in-memory") {
+    read_tile_db(tiles_path) 
+  } else { # "disk"
+    open_tile_db(tiles_path)
+  }
   tileset_id <- tileset_name(tiles_path)
   tile_json_name <- glue::glue("{tileset_id}.json")
   tileset_id <- tileset_name(tiles_path)
