@@ -1,3 +1,4 @@
+#' @export
 serve_mvt <- function(tiles_path, host = "0.0.0.0", port = NULL, serve_mode = "in-memory") {
   if (!file.exists(tiles_path)) {
     stop(
