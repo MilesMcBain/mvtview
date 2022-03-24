@@ -6,7 +6,8 @@ view_mvt <- function(
   get_line_color = "#ffffffff",
   get_line_width = 2,
   line_width_units = "pixels",
-  
+  point_radius_units = "pixels",
+  get_point_radius = 2,
   stroked = TRUE,
   tooltip = everything(),
   ...,
@@ -14,7 +15,8 @@ view_mvt <- function(
 ) {
   host <- "0.0.0.0"
   port <- httpuv::randomPort(host = host)
-  server <- callr::r_bg(
+  server <- callr::r_session$new()
+  server$call(
     function(...) mbvr::serve_mvt(...),
     args = list(
       tiles_path = tiles_path,
@@ -45,7 +47,10 @@ view_mvt <- function(
       get_fill_color = {{ get_fill_color }},
       get_line_width = {{ get_line_width }},
       line_width_units = {{ line_width_units }},
+      point_radius_units = {{ point_radius_units }},
+      get_point_radius = {{ get_point_radius }},
       tooltip = FALSE,
+      pickable = FALSE,
       stroked = {{ stroked }},
       ...
     )
@@ -59,4 +64,5 @@ push_server <- function(server) {
 
 clean_up <- function() {
   lapply(SESSION$servers, function(server) server$kill())
+  SESSION$servers <- NULL
 }

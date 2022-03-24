@@ -32,7 +32,7 @@ tileset_name <- function(tiles_path) {
 }
 
 create_mvt_server <- function(tiles_path, host, port, serve_mode) {
-  server <- ambiorix::Ambiorix$new(host = host, port = port)
+  server <- ambiorix::Ambiorix$new(host = host, port = port, log = FALSE)
   tile_db <- if (serve_mode == "in-memory") {
     read_tile_db(tiles_path) 
   } else { # "disk"
