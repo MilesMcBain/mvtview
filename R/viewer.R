@@ -9,7 +9,8 @@ view_mvt <- function(
   point_radius_units = "pixels",
   get_point_radius = 2,
   stroked = TRUE,
-  tooltip = everything(),
+  tooltip = TRUE,
+  pickable = TRUE,
   ...,
   .serve_mode = "in-memory"
 ) {
@@ -27,30 +28,36 @@ view_mvt <- function(
   )
   push_server(server) # so we can clean it up later
 
-  Sys.sleep(3) # give the server a chance to spool up
-  if (!server$is_alive()) {
-    stop(server$read_all_error_lines())
-  }
-  
-
   tiles_url <-
     glue::glue("http://{host}:{port}/{tileset_name(tiles_path)}.json")
 
-  tiles_metadata <- jsonlite::read_json(tiles_url)
+  tiles_metadata <- init_json_metadata(tiles_url)
+
+  if (is.null(tiles_metadata)) {
+    if (!server$is_alive()) {
+      stop("mbtiles server died with error:", server$read_all_error_lines())
+    } else {
+      stop(
+        "Could not recive mbtiles metadata from server, attempting for ",
+        max_attempt_time,
+        " seconds."
+      )
+    }
+  }
 
   rdeck::rdeck(
     initial_bounds = structure(unlist(tiles_metadata$bounds), crs = 4326, class = "bbox")
   ) |>
     rdeck::add_mvt_layer(
-      data = tiles_url,
+      data = rdeck::tile_json(tiles_url),
       get_line_color = {{ get_line_color }},
       get_fill_color = {{ get_fill_color }},
       get_line_width = {{ get_line_width }},
       line_width_units = {{ line_width_units }},
       point_radius_units = {{ point_radius_units }},
       get_point_radius = {{ get_point_radius }},
-      tooltip = FALSE,
-      pickable = FALSE,
+      tooltip = {{ tooltip }},
+      pickable = {{ pickable }},
       stroked = {{ stroked }},
       ...
     )
@@ -62,7 +69,29 @@ push_server <- function(server) {
   SESSION$servers <- c(SESSION$servers, server)
 }
 
-clean_up <- function() {
+clean_mvt <- function() {
   lapply(SESSION$servers, function(server) server$kill())
   SESSION$servers <- NULL
+}
+
+init_json_metadata <- function(tiles_url, max_attempt_time = 5) {
+
+  tiles_metadata <- NULL
+  attempt_start <- Sys.time()
+  while (
+    is.null(tiles_metadata) &&
+      as.numeric(Sys.time() - attempt_start, unit = "secs") < max_attempt_time
+  ) {
+    tiles_metadata <- read_json_safely(tiles_url)
+    if (is.null(tiles_metadata)) Sys.sleep(0.5)
+  }
+
+  tiles_metadata
+}
+
+read_json_safely <- function(tiles_url) {
+  tiles_metadata <- tryCatch(
+    jsonlite::read_json(tiles_url),
+    error = function(e) NULL
+  )
 }
