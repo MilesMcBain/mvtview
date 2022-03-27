@@ -1,5 +1,92 @@
+utils::globalVariables("SESSION")
+SESSION <- new.env()
+
+#' Serve a .mbtiles database of vectortiles
+#' 
+#' Starts a web server in a background R session serving vector tiles from a
+#' supplied .mbtiles file.
+#' 
+#' @param tiles_path The path to an .mbtiles file.
+#' @param .serve_mode The way in which the server handles the vector tiles
+#' database. "in-memory" is the default and it will read the entire tile database
+#' into R as a tibble. "disk" will read tiles from the .mbtiles file as an
+#' SQLite database  from disk. The default is more performant. Use "disk" only if
+#' you have a large vector tileset that would consume too much memory to hold in
+#' RAM at once.
+#' 
+#' @seealso start_mvt_server for more control of server behaviour.
+#'
 #' @export
-serve_mvt <- function(tiles_path, host = "0.0.0.0", port = NULL, serve_mode = "in-memory") {
+serve_mvt <- function(tiles_path, .serve_mode = "in-memory") {
+  host <- "0.0.0.0"
+  port <- httpuv::randomPort(host = host)
+  server <- callr::r_session$new()
+  server$call(
+    function(...) mvtview::start_mvt_server(...),
+    args = list(
+      tiles_path = tiles_path,
+      host = host,
+      port = port,
+      .serve_mode = .serve_mode
+    )
+  )
+  push_server(structure(server, host = host, port = port)) # so we can clean it up later
+
+  tiles_url <-
+    glue::glue("http://{host}:{port}/{tileset_name(tiles_path)}.json")
+
+
+  max_attempt_time <- 5
+  tiles_metadata <- init_json_metadata(tiles_url, max_attempt_time)
+
+  if (is.null(tiles_metadata)) {
+    if (!server$is_alive()) {
+      stop("mbtiles server died with error:", server$read_all_error_lines())
+    } else {
+      stop(
+        "Could not receive mbtiles metadata from server, attempting for ",
+        max_attempt_time,
+        " seconds."
+      )
+    }
+  }
+
+  message(glue::glue("Serving your tile data from {tiles_url}.\nRun clean_mvt() to remove all server sessions."))
+
+  invisible(
+    structure(
+      list(
+        server = server,
+        host = host,
+        port = port,
+        tiles_url = tiles_url,
+        tiles_metadata = tiles_metadata
+      ),
+      class = "live_mvt_server"
+    )
+  )
+}
+
+#' Start an mvt_server in the current session
+#'
+#' 
+#' Starts a web server serving vector tiles from a supplied .mbtiles file.
+#' 
+#' [serve_mvt()] is likely more convenient. Only use this if if you want more
+#' control of the host and port on which your tiles are served on.
+#' 
+#' Where [serve_mvt()] verifies the server is actually up and responding, this
+#' funciton does not. So that's up to you to take on.
+#' 
+#' Note: This server has been built minimising code written, not ' maximising
+#' performance. It is intended for local development work, and will likely not
+#' be performant enough for any production use-case.
+#' 
+#' @inheritParams serve_mvt
+#' @param host the host to serve tiles on
+#' @param port the port to serve tiles on
+#' @export
+start_mvt_server <- function(tiles_path, host = "0.0.0.0", port = NULL, .serve_mode = "in-memory") {
   if (!file.exists(tiles_path)) {
     stop(
       "could not find the tile database: ",
@@ -12,14 +99,16 @@ serve_mvt <- function(tiles_path, host = "0.0.0.0", port = NULL, serve_mode = "i
     )
   }
 
-  if (!(serve_mode %in% c("in-memory", "disk"))) {
+  if (!(.serve_mode %in% c("in-memory", "disk"))) {
     stop(
-      "support serve_mode for tiles is either 'in-memory' or 'disk'."
+      "supported .serve_mode for tiles is either 'in-memory' or 'disk'."
     )
   }
 
-  mvt_server <- create_mvt_server(tiles_path, host, port, serve_mode)
+  mvt_server <- create_mvt_server(tiles_path, host, port, .serve_mode)
   mvt_server$start()
+
+  invisible(mvt_server)
 
 }
 
@@ -31,10 +120,10 @@ tileset_name <- function(tiles_path) {
   fs::path_ext_remove(fs::path_file(tiles_path))
 }
 
-create_mvt_server <- function(tiles_path, host, port, serve_mode) {
+create_mvt_server <- function(tiles_path, host, port, .serve_mode) {
   server <- ambiorix::Ambiorix$new(host = host, port = port, log = FALSE)
-  tile_db <- if (serve_mode == "in-memory") {
-    read_tile_db(tiles_path) 
+  tile_db <- if (.serve_mode == "in-memory") {
+    read_tile_db(tiles_path)
   } else { # "disk"
     open_tile_db(tiles_path)
   }
@@ -78,4 +167,24 @@ create_mvt_server <- function(tiles_path, host, port, serve_mode) {
   })
 
   server
+}
+
+push_server <- function(server) {
+  if (is.null(SESSION$servers)) SESSION$servers <- list()
+
+  SESSION$servers <- c(SESSION$servers, server)
+}
+
+#' Stop all running vector tile servers
+#' 
+#' As you use serve_mvt or view_mvt servers will accumulate in child processes.
+#' This function kills all child processes serving tiles. 
+#'
+#' @export
+clean_mvt <- function() {
+  lapply(SESSION$servers, function(server) {
+    message(glue::glue("Removing http://{attr(server, 'host')}:{attr(server, 'port')}"))
+    server$kill()
+  })
+  SESSION$servers <- NULL
 }

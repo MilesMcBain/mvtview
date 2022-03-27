@@ -30,11 +30,11 @@ get_tile_info.SQLiteConnection <- function(db) {
       \(name,value) switch(
         name,
         center = ,
-        bounds = setNames(list(as.numeric(strsplit(value, ",")[[1]])), name),
+        bounds = stats::setNames(list(as.numeric(strsplit(value, ",")[[1]])), name),
         minzoom = ,
-        maxzoom = setNames(list(as.numeric(value)), name),
+        maxzoom = stats::setNames(list(as.numeric(value)), name),
         json = jsonlite::parse_json(value),
-        setNames(list(value), name)
+        stats::setNames(list(value), name)
       )
     ) |>
     purrr::flatten()
@@ -57,6 +57,7 @@ get_tile.SQLiteConnection <- function(db, z, x, y) {
   get_tile_impl(dplyr::tbl(db, "tiles"), z, x, y)
 }
 
+#' @autoglobal
 get_tile_impl <- function(tile_table, z, x, y) {
 
   flipped_y <- bitwShiftL(1, z) - 1 - y
