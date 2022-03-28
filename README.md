@@ -1,7 +1,7 @@
 
 # mvtview
 
-Provides a development Mapbox Vector Tile server and viewer for R, powered by {ambiorix} and {rdeck}.
+Provides a development Mapbox Vector Tile server and viewer for R, powered by {plumber} and {rdeck}.
 
 ## Installation
 

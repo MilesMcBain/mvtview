@@ -48,7 +48,7 @@ view_mvt <- function(
 
   rdeck::rdeck(
     initial_bounds = structure(unlist(server$tiles_metadata$bounds), crs = 4326, class = "bbox")
-  ) |>
+  ) %>%
     rdeck::add_mvt_layer(
       data = rdeck::tile_json(server$tiles_url),
       get_line_color = {{ get_line_color }},

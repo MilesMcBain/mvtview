@@ -1,6 +1,6 @@
 Package: mvtview
 Title: View and Serve Mapbox Vector Tile Databases
-Version: 0.0.1
+Version: 0.0.2
 Authors@R: 
     person("Miles", "McBain", , "miles.mcbain@gmail.com", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0003-2865-2548"))
@@ -12,7 +12,6 @@ Roxygen: list(
     roclets = c("collate", "namespace", "rd", "roxyglobals::global_roclet"))
 RoxygenNote: 7.1.2
 Imports: 
-    ambiorix (>= 2.0.0.9000),
     callr,
     DBI,
     dplyr,
@@ -20,6 +19,8 @@ Imports:
     glue,
     httpuv,
     jsonlite,
+    magrittr,
+    plumber,
     purrr,
     rdeck (>= 0.3.0.91000),
     RSQLite,
@@ -27,7 +28,6 @@ Imports:
     stringr
 Remotes: 
     anthonynorth/rdeck,
-    devOpifex/ambiorix,
     anthonynorth/roxyglobals
 Suggests: 
     roxyglobals (>= 0.2.1)

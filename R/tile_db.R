@@ -25,7 +25,7 @@ get_tile_info.in_mem_tile_db <- function(db) {
 #' @export
 get_tile_info.SQLiteConnection <- function(db) {
   metadata <-
-    DBI::dbReadTable(db, "metadata") |>
+    DBI::dbReadTable(db, "metadata") %>%
     purrr::pmap(
       \(name,value) switch(
         name,
@@ -36,7 +36,7 @@ get_tile_info.SQLiteConnection <- function(db) {
         json = jsonlite::parse_json(value),
         stats::setNames(list(value), name)
       )
-    ) |>
+    ) %>%
     purrr::flatten()
 
     metadata$scheme <- "xyz"
@@ -63,12 +63,12 @@ get_tile_impl <- function(tile_table, z, x, y) {
   flipped_y <- bitwShiftL(1, z) - 1 - y
 
   tile_record <-
-    tile_table |>
+    tile_table %>%
     dplyr::filter(
       zoom_level == z,
       tile_column == x,
       tile_row == flipped_y
-    ) |> 
+    ) %>% 
     dplyr::collect()
   
   if (length(tile_record$tile_data) == 1)
