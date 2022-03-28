@@ -98,16 +98,14 @@ start_mvt_server <- function(tiles_path, host = "0.0.0.0", port = NULL, .serve_m
       "{mbvr} only supports serving .mbtiles tile databases"
     )
   }
-
   if (!(.serve_mode %in% c("in-memory", "disk"))) {
     stop(
       "supported .serve_mode for tiles is either 'in-memory' or 'disk'."
     )
   }
-
   mvt_server <- create_mvt_server(tiles_path, .serve_mode)
-  plumber::pr_run(mvt_server, host = host, port = port, docs = FALSE)
 
+  plumber::pr_run(mvt_server, host = host, port = port, docs = FALSE)
 }
 
 is_mbtiles <- function(tiles_path) {
@@ -147,8 +145,8 @@ create_mvt_server <- function(tiles_path, .serve_mode) {
         tile_template_url <-
           glue::glue("http://{req$HTTP_HOST}/{tileset_id}/{{z}}/{{x}}/{{y}}.vector.pbf")
         tile_info$tiles <- tile_template_url
-
         res$headers$`Access-Control-Allow-Origin` <- "*"
+
         tile_info
       },
       serializer = plumber::serializer_unboxed_json()
@@ -162,6 +160,7 @@ create_mvt_server <- function(tiles_path, .serve_mode) {
         z <- as.numeric(req$argsPath$z)
 
         tile_content <- get_tile(tile_db, z, x, y)
+
         if (length(tile_content) > 0) {
           res$headers$`Access-Control-Allow-Origin` <- "*"
           res$headers$`Content-Type` <- "application/octect-stream"
@@ -172,7 +171,6 @@ create_mvt_server <- function(tiles_path, .serve_mode) {
           res$status <- 204
           return(res)
         }
-
       }
     )
 
