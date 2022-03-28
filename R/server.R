@@ -119,7 +119,6 @@ tileset_name <- function(tiles_path) {
 }
 
 create_mvt_server <- function(tiles_path, .serve_mode) {
-  server_env <- new.env()
   tileset_id <- tileset_name(tiles_path)
   tile_json_name <- glue::glue("{tileset_id}.json")
   tile_json_route <- glue::glue("/{tile_json_name}")
