@@ -27,7 +27,7 @@ get_tile_info.SQLiteConnection <- function(db) {
   metadata <-
     DBI::dbReadTable(db, "metadata") %>%
     purrr::pmap(
-      \(name,value) switch(
+      function(name, value) switch(
         name,
         center = ,
         bounds = stats::setNames(list(as.numeric(strsplit(value, ",")[[1]])), name),
