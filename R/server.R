@@ -7,6 +7,8 @@ SESSION <- new.env()
 #' supplied .mbtiles file.
 #'
 #' @param tiles_path The path to an .mbtiles file.
+#' @param port The port to for the server to serve mbtiles on. Default is a
+#'  random available port.
 #' @param .serve_mode The way in which the server handles the vector tiles
 #' database. "in-memory" is the default and it will read the entire tile database
 #' into R as a tibble. "disk" will read tiles from the .mbtiles file as an
@@ -17,9 +19,9 @@ SESSION <- new.env()
 #' @seealso start_mvt_server for more control of server behaviour.
 #'
 #' @export
-serve_mvt <- function(tiles_path, .serve_mode = "in-memory") {
+serve_mvt <- function(tiles_path, port = NULL, .serve_mode = "in-memory") {
   host <- "0.0.0.0"
-  port <- httpuv::randomPort(host = host)
+  port <- port %||% httpuv::randomPort(host = host)
   server <- callr::r_session$new()
   server$call(
     function(...) mvtview::start_mvt_server(...),
@@ -41,16 +43,15 @@ serve_mvt <- function(tiles_path, .serve_mode = "in-memory") {
   tiles_metadata <- init_json_metadata(tiles_url, max_attempt_time)
 
   if (is.null(tiles_metadata)) {
-    if (!server$is_alive()) {
-      stop("mbtiles server died with error:", server$read_all_error_lines())
-    } else {
-      stop(
+      fail_message <- glue::glue(
         "Could not receive mbtiles metadata from server, attempting for ",
-        max_attempt_time,
-        " seconds."
+        "{max_attempt_time} seconds. \n",
+        "server said: {paste0(server$read_error_lines(), collapse = '\n')} \n",
+        "server terminated."
       )
+      server$kill()
+      stop(fail_message)
     }
-  }
 
 
   invisible(

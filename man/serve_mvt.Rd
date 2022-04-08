@@ -4,10 +4,13 @@
 \alias{serve_mvt}
 \title{Serve a .mbtiles database of vectortiles}
 \usage{
-serve_mvt(tiles_path, .serve_mode = "in-memory")
+serve_mvt(tiles_path, port = NULL, .serve_mode = "in-memory")
 }
 \arguments{
 \item{tiles_path}{The path to an .mbtiles file.}
+
+\item{port}{The port to for the server to serve mbtiles on. Default is a
+random available port.}
 
 \item{.serve_mode}{The way in which the server handles the vector tiles
 database. "in-memory" is the default and it will read the entire tile database

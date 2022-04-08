@@ -26,3 +26,5 @@ read_json_safely <- function(tiles_url) {
     }
   )
 }
+
+`%||%` <- function(lhs, rhs) if (is.null(lhs)) rhs else lhs
